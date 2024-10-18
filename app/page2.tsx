@@ -9,7 +9,6 @@ interface Token {
   balance: string;
   decimals: number;
   image_url: string;
-  contract_address?: string; // Changé de 'address' à 'contract_address' et rendu optionnel
 }
 
 export default function Home() {
@@ -70,15 +69,9 @@ export default function Home() {
     }
   };
 
-  const formatAddress = (address: string | undefined) => {
-    if (!address) return 'Adresse inconnue';
-    try {
-      const tempAddress = Address.parse(address).toString();
-      return `${tempAddress.slice(0, 4)}...${tempAddress.slice(-4)}`;
-    } catch (error) {
-      console.error('Erreur lors du formatage de l\'adresse:', error);
-      return 'Adresse invalide';
-    }
+  const formatAddress = (address: string) => {
+    const tempAddress = Address.parse(address).toString();
+    return `${tempAddress.slice(0, 4)}...${tempAddress.slice(-4)}`;
   };
 
   const fetchTokens = async (walletAddress: string) => {
@@ -101,16 +94,13 @@ export default function Home() {
       });
 
       const data = await res.json();
-      console.log('Données reçues de l\'API:', data); // Ajout d'un log pour déboguer
-
       const assetsList = data.result.assets;
       const assets = assetsList.filter(
         (item: Token) => item.balance && BigInt(item.balance) > 0
       );
-      console.log('Assets filtrés:', assets); // Ajout d'un log pour déboguer
       setTokens(assets);
     } catch (error) {
-      console.error('Erreur lors de la récupération des assets:', error);
+      console.error('Error fetching assets:', error);
       setTokens([]);
     }
   };
@@ -151,14 +141,8 @@ export default function Home() {
                   <td className="border p-2">
                     <img src={token.image_url} alt={token.display_name} className="w-10 h-10 mx-auto" />
                   </td>
-                  <td className="border p-2">
-                    {token.display_name}
-                    <br />
-                    <span className="text-xs text-gray-500">
-                      {token.contract_address ? formatAddress(token.contract_address) : 'Adresse non disponible'}
-                    </span>
-                  </td>
-                  <td className="border p-2">{(parseFloat(token.balance) / Math.pow(10, token.decimals)).toFixed(6)}</td>
+                  <td className="border p-2">{token.display_name}</td>
+                  <td className="border p-2">{parseFloat(token.balance) / Math.pow(10, token.decimals)}</td>
                 </tr>
               ))}
             </tbody>
