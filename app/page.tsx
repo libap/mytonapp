@@ -9,7 +9,17 @@ interface Token {
   balance: string;
   decimals: number;
   image_url: string;
-  contract_address?: string; // Changé de 'address' à 'contract_address' et rendu optionnel
+  contract_address?: string;
+  symbol?: string;
+}
+
+interface PriceData {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
 export default function Home() {
@@ -17,6 +27,8 @@ export default function Home() {
   const [tonWalletAddress, setTonWalletAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tokens, setTokens] = useState<Token[]>([]);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PriceData[]>([]);
 
   const handleWalletConnection = useCallback((address: string) => {
     setTonWalletAddress(address);
@@ -115,6 +127,31 @@ export default function Home() {
     }
   };
 
+  const handleTokenClick = async (token: Token) => {
+    if (token.symbol) {
+      setSelectedToken(token);
+      await fetchPriceHistory(token.symbol);
+    } else {
+      console.log("Symbole du jeton non disponible");
+    }
+  };
+
+  const fetchPriceHistory = async (symbol: string) => {
+    try {
+      const response = await fetch(`https://tonapi.io/v1/tokens/price_history?symbol=${symbol}&interval=1d`);
+      const data = await response.json();
+      if (data.prices) {
+        setPriceHistory(data.prices);
+      } else {
+        console.error('Erreur lors de la récupération de l\'historique des prix:', data.error);
+        setPriceHistory([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la requête de l\'historique des prix:', error);
+      setPriceHistory([]);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center">
@@ -137,7 +174,7 @@ export default function Home() {
           >
             Disconnect Wallet
           </button>
-          <table className="w-full max-w-md border-collapse">
+          <table className="w-full max-w-md border-collapse mb-8">
             <thead>
               <tr>
                 <th className="border p-2">Image</th>
@@ -147,7 +184,11 @@ export default function Home() {
             </thead>
             <tbody>
               {tokens.map((token, index) => (
-                <tr key={index}>
+                <tr 
+                  key={index} 
+                  onClick={() => handleTokenClick(token)}
+                  className="cursor-pointer hover:bg-gray-100"
+                >
                   <td className="border p-2">
                     <img src={token.image_url} alt={token.display_name} className="w-10 h-10 mx-auto" />
                   </td>
@@ -163,6 +204,27 @@ export default function Home() {
               ))}
             </tbody>
           </table>
+          {selectedToken && priceHistory.length > 0 && (
+            <div className="mt-8 w-full max-w-md">
+              <h2 className="text-2xl font-bold mb-4">Historique des prix pour {selectedToken.display_name}</h2>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border p-2">Date</th>
+                    <th className="border p-2">Prix de clôture</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {priceHistory.slice(-5).map((price, index) => (
+                    <tr key={index}>
+                      <td className="border p-2">{new Date(price.timestamp * 1000).toLocaleDateString()}</td>
+                      <td className="border p-2">${price.close.toFixed(6)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
         <button
