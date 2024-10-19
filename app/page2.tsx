@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTonConnectUI } from '@tonconnect/ui-react';
 import { Address } from "@ton/core";
+import { ClipboardIcon } from '@heroicons/react/24/outline';
 
 interface Token {
   display_name: string;
@@ -74,6 +75,14 @@ export default function Home() {
     return `${tempAddress.slice(0, 4)}...${tempAddress.slice(-4)}`;
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Adresse copiée dans le presse-papiers !');
+    }).catch(err => {
+      console.error('Erreur lors de la copie :', err);
+    });
+  };
+
   const fetchTokens = async (walletAddress: string) => {
     try {
       const res = await fetch('https://rpc.ston.fi', {
@@ -120,7 +129,16 @@ export default function Home() {
       <h1 className="text-4xl font-bold mb-8">TON Connect Demo</h1>
       {tonWalletAddress ? (
         <div className="flex flex-col items-center">
-          <p className="mb-4">Connected: {formatAddress(tonWalletAddress)}</p>
+          <p className="mb-4 flex items-center">
+            Connecté : {formatAddress(tonWalletAddress)}
+            <button
+              onClick={() => copyToClipboard(tonWalletAddress)}
+              className="ml-2 p-1 hover:bg-gray-200 rounded"
+              title="Copier l'adresse complète"
+            >
+              <ClipboardIcon className="h-5 w-5 text-gray-500" />
+            </button>
+          </p>
           <button
             onClick={handleWalletAction}
             className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mb-4"

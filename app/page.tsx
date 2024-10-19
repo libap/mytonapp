@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTonConnectUI } from '@tonconnect/ui-react';
 import { Address } from "@ton/core";
+import { ClipboardIcon } from '@heroicons/react/24/outline';
 
 interface Token {
   display_name: string;
@@ -86,11 +87,19 @@ export default function Home() {
     if (!address) return 'Adresse inconnue';
     try {
       const tempAddress = Address.parse(address).toString();
-      return `${tempAddress.slice(0, 4)}...${tempAddress.slice(-4)}`;
+      return tempAddress;
     } catch (error) {
       console.error('Erreur lors du formatage de l\'adresse:', error);
       return 'Adresse invalide';
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Adresse copiée dans le presse-papiers !');
+    }).catch(err => {
+      console.error('Erreur lors de la copie dans le presse-papiers:', err);
+    });
   };
 
   const fetchTokens = async (walletAddress: string) => {
@@ -195,8 +204,19 @@ export default function Home() {
                   <td className="border p-2">
                     {token.display_name}
                     <br />
-                    <span className="text-xs text-gray-500">
-                      {token.contract_address ? formatAddress(token.contract_address) : 'Adresse non disponible'}
+                    <span className="text-xs text-gray-500 flex items-center">
+                      {token.contract_address ? (
+                        <>
+                          <ClipboardIcon 
+                            className="h-4 w-4 mr-1 cursor-pointer" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(formatAddress(token.contract_address));
+                            }}
+                          />
+                          {`${formatAddress(token.contract_address).slice(0, 4)}...${formatAddress(token.contract_address).slice(-4)}`}
+                        </>
+                      ) : 'Adresse non disponible'}
                     </span>
                   </td>
                   <td className="border p-2">{(parseFloat(token.balance) / Math.pow(10, token.decimals)).toFixed(6)}</td>
